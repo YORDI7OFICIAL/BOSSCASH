@@ -11,12 +11,10 @@ workflows:
           flutter create . --platforms=android --overwrite
       - name: Inyectar Calculadora Real
         script: |
-          # Borramos el contador de fábrica y metemos tu código morado
           rm -f lib/main.dart
           curl -o lib/main.dart https://raw.githubusercontent.com/${CM_REPO_SLUG}/${CM_COMMIT}/lib/main.dart
-          cat lib/main.dart
       - name: Compilar APK Real
         script: |
           flutter build apk --release
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+      - build/**/*.apk
