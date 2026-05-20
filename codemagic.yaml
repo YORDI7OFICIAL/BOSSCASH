@@ -2,8 +2,6 @@ workflows:
   default:
     name: BossCash
     scripts:
-      - name: Generar archivos de Android
-        script: flutter create . --platforms=android
       - name: Compilar el APK
         script: flutter build apk --release
     artifacts:
