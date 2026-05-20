@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _resultadoVes = 0.0;
   bool _cargandoTasas = false;
 
-  // 1. Tasas base exactas a escala de Venezuela en Bolívares (Se actualizan solas cada hora)
+  // Valores de respaldo por si el teléfono se queda sin saldo o sin internet
   Map<String, double> tasas = {
     'BCV': 520.91,
     'USDT': 712.87,
@@ -48,7 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'GUYANA': 2.48,
   };
 
-  // Historiales reales para dibujar las gráficas en la otra pantalla
   Map<String, List<double>> historialesGraficas = {
     'BCV': [518.50, 519.20, 519.93, 520.40, 520.91],
     'USDT': [708.10, 710.30, 711.00, 712.15, 712.87],
@@ -67,37 +66,51 @@ class _HomeScreenState extends State<HomeScreen> {
     _actualizarTasasDesdeAPI();
   }
 
-  // Conexión automática real a internet para actualizar tasas cada hora
+  // Descarga e inyección automatizada de precios reales de Venezuela
   Future<void> _actualizarTasasDesdeAPI() async {
     setState(() { _cargandoTasas = true; });
     try {
       final cliente = HttpClient();
-      // Jala los cambios globales de monedas contra el USD para calcular variaciones vivas
-      final solicitud = await cliente.getUrl(Uri.parse('https://open.er-api.com/v6/latest/USD'));
-      final respuesta = await solicitud.close();
       
-      if (respuesta.statusCode == 200) {
-        final datosEnCadena = await respuesta.transform(utf8.decoder).join();
-        final data = json.decode(datosEnCadena);
+      // 1. Consulta la API dedicada de cotizaciones para Venezuela (BCV, Paralelo/USDT, Euro)
+      final solicitudVzla = await cliente.getUrl(Uri.parse('https://ve.dolarapi.com/v1/dolares'));
+      final respuestaVzla = await solicitudVzla.close();
+      
+      if (respuestaVzla.statusCode == 200) {
+        final datosCadenaVzla = await respuestaVzla.transform(utf8.decoder).join();
+        List<dynamic> listaData = json.decode(datosCadenaVzla);
         
         setState(() {
-          if (data['rates'] != null) {
-            // Mantiene las tasas base del BCV y USDT del mercado venezolano y calcula las variaciones según el mercado mundial en vivo
-            double euroGlobal = (data['rates']['EUR'] ?? 0.92).toDouble();
-            double copGlobal = (data['rates']['COP'] ?? 4000.0).toDouble();
-            double clpGlobal = (data['rates']['CLP'] ?? 940.0).toDouble();
+          for (var item in listaData) {
+            if (item['fuente'] == 'oficial') {
+              tasas['BCV'] = (item['promedio'] ?? tasas['BCV']!).toDouble();
+            } else if (item['fuente'] == 'paralelo') {
+              tasas['USDT'] = (item['promedio'] ?? tasas['USDT']!).toDouble();
+            }
+          }
+        });
+      }
+
+      // 2. Consulta de variación internacional para monedas de soporte sudamericanas
+      final solicitudGlobal = await cliente.getUrl(Uri.parse('https://open.er-api.com/v6/latest/USD'));
+      final respuestaGlobal = await solicitudGlobal.close();
+      
+      if (respuestaGlobal.statusCode == 200) {
+        final datosCadenaGlobal = await respuestaGlobal.transform(utf8.decoder).join();
+        final dataG = json.decode(datosCadenaGlobal);
+        
+        setState(() {
+          if (dataG['rates'] != null) {
+            double euroGlobal = (dataG['rates']['EUR'] ?? 0.92).toDouble();
+            double copGlobal = (dataG['rates']['COP'] ?? 4000.0).toDouble();
+            double clpGlobal = (dataG['rates']['CLP'] ?? 940.0).toDouble();
             
-            // Fluctuación real simulada sobre base de datos del BCV real
-            tasas['BCV'] = 520.91 + (data['rates']['USD'] ?? 1.0) - 1.0;
-            tasas['USDT'] = 712.87 + (data['rates']['USD'] ?? 1.0) - 1.0;
             tasas['EURO'] = double.parse((tasas['BCV']! * (1 / euroGlobal)).toStringAsFixed(2));
-            
-            // Ajuste automático de monedas sudamericanas mapeadas a Bs
             tasas['COLOMBIA'] = double.parse((tasas['BCV']! / (copGlobal / 1000)).toStringAsFixed(3));
             tasas['CHILE'] = double.parse((tasas['BCV']! / (clpGlobal / 1000)).toStringAsFixed(3));
           }
           
-          // Alimenta los historiales agregando el último precio de la hora
+          // Alimenta de forma automática las barras de las gráficas
           tasas.forEach((key, value) {
             if (historialesGraficas[key] != null) {
               historialesGraficas[key]!.removeAt(0);
@@ -108,8 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       cliente.close();
     } catch (e) {
-      debugPrint("Usando base de datos interna de respaldo: $e");
-    } finally {
+      debugPrint("Error de red controlado, manteniendo base local: $e");
+    } final {
       setState(() {
         _cargandoTasas = false;
         _calcular(_montoController.text);
@@ -246,7 +259,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Stack(
                             children: [
-                              // BOTÓN DE LA GRÁFICA ACTIVO: Abre la pantalla secundaria independiente
                               Positioned(
                                 top: 0,
                                 right: 0,
@@ -330,7 +342,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// 2. NUEVA PANTALLA EXCLUSIVA PARA MOSTRAR LA GRÁFICA COMPLETA DE PRECIOS
 class GraficaPantalla extends StatelessWidget {
   final String moneda;
   final List<double> puntos;
@@ -362,8 +373,6 @@ class GraficaPantalla extends StatelessWidget {
             const SizedBox(height: 40),
             const Text('COMPORTAMIENTO DEL MERCADO (ÚLTIMAS HORAS)', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
             const SizedBox(height: 20),
-            
-            // Render de la gráfica ampliada de barras Oro
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(20),
@@ -376,7 +385,6 @@ class GraficaPantalla extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: puntos.map((p) {
-                    // Genera variación visual limpia de las barras en base al valor real
                     double alturaCalculada = ((p * 100) % 150) + 50;
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -401,7 +409,11 @@ class GraficaPantalla extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-            const Text('* Las tasas se sincronizan automáticamente con servidores globales cada 60 minutos.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 11, style: FontStyle.italic)),
+            const Text(
+              '* Las tasas se sincronizan automáticamente con servidores globales cada 60 minutos.', 
+              textAlign: TextAlign.center, 
+              style: TextStyle(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic),
+            ),
             const SizedBox(height: 20),
           ],
         ),
