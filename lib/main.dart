@@ -33,7 +33,7 @@ class _CalculadoraBossCashState extends State<CalculadoraBossCash> {
   double _resultadoPesos = 0.0;
   double _resultadoBolivares = 0.0;
 
-  // Tasas fijas solicitadas
+  // Tasas fijas configuradas
   final double tasaPesos = 51.85;
   final double tasaBolivares = 70.50;
 
@@ -60,7 +60,7 @@ class _CalculadoraBossCashState extends State<CalculadoraBossCash> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            // Cuadro de entrada de texto
+            // Cuadro de entrada de texto para los Dólares
             TextField(
               controller: _montoController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -95,7 +95,7 @@ class _CalculadoraBossCashState extends State<CalculadoraBossCash> {
             ),
             const SizedBox(height: 40),
 
-            // Cuadro de Resultados Pesos
+            // Cuadro de Resultados en Pesos Colombianos
             Card(
               color: const Color(0xFF16213E),
               shape: RoundedRectangleBorder(
@@ -116,7 +116,7 @@ class _CalculadoraBossCashState extends State<CalculadoraBossCash> {
             ),
             const SizedBox(height: 20),
 
-            // Cuadro de Resultados Bolívares
+            // Cuadro de Resultados en Bolívares
             Card(
               color: const Color(0xFF16213E),
               shape: RoundedRectangleBorder(
