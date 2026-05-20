@@ -37,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   double _resultadoVes = 0.0;
   bool _cargandoTasas = false;
 
-  // Valores de respaldo por si el teléfono se queda sin saldo o sin internet
   Map<String, double> tasas = {
     'BCV': 520.91,
     'USDT': 712.87,
@@ -66,13 +65,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _actualizarTasasDesdeAPI();
   }
 
-  // Descarga e inyección automatizada de precios reales de Venezuela
   Future<void> _actualizarTasasDesdeAPI() async {
     setState(() { _cargandoTasas = true; });
     try {
       final cliente = HttpClient();
       
-      // 1. Consulta la API dedicada de cotizaciones para Venezuela (BCV, Paralelo/USDT, Euro)
       final solicitudVzla = await cliente.getUrl(Uri.parse('https://ve.dolarapi.com/v1/dolares'));
       final respuestaVzla = await solicitudVzla.close();
       
@@ -91,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
 
-      // 2. Consulta de variación internacional para monedas de soporte sudamericanas
       final solicitudGlobal = await cliente.getUrl(Uri.parse('https://open.er-api.com/v6/latest/USD'));
       final respuestaGlobal = await solicitudGlobal.close();
       
@@ -110,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
             tasas['CHILE'] = double.parse((tasas['BCV']! / (clpGlobal / 1000)).toStringAsFixed(3));
           }
           
-          // Alimenta de forma automática las barras de las gráficas
           tasas.forEach((key, value) {
             if (historialesGraficas[key] != null) {
               historialesGraficas[key]!.removeAt(0);
@@ -122,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       cliente.close();
     } catch (e) {
       debugPrint("Error de red controlado, manteniendo base local: $e");
-    } final {
+    } finally { // CORREGIDO AQUÍ: Ahora dice 'finally' correctamente
       setState(() {
         _cargandoTasas = false;
         _calcular(_montoController.text);
