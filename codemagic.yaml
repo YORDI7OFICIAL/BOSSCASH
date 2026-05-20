@@ -6,9 +6,12 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Crear Base de Android
+      - name: Resetear Proyecto Completo
         script: |
-          flutter create . --platforms=android --overwrite
+          cd ..
+          rm -rf clone
+          flutter create clone --platforms=android --org com.bosscash
+          cd clone
       - name: Inyectar Calculadora Real
         script: |
           rm -f lib/main.dart
@@ -17,4 +20,4 @@ workflows:
         script: |
           flutter build apk --release
     artifacts:
-      - build/**/*.apk
+      - build/app/outputs/flutter-apk/*.apk
