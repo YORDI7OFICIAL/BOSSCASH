@@ -1,3 +1,4 @@
+
 workflows:
   default:
     name: BossCash
@@ -6,9 +7,10 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Crear estructura moderna
+      - name: Forzar Estructura Android v2
         script: |
-          flutter create . --platforms=android --org com.bosscash
+          rm -rf android
+          flutter create . --platforms=android --overwrite
       - name: Compilar APK Real
         script: |
           flutter build apk --release
