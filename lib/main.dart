@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:io'; // Usa el motor nativo del teléfono, cero errores de paquetes
 
 void main() {
   runApp(const BossCashApp());
@@ -17,7 +17,7 @@ class BossCashApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0A0A), // Negro absoluto Wall Street
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
       ),
       home: const HomeScreen(),
     );
@@ -37,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   double _resultadoVes = 0.0;
   bool _cargandoTasas = false;
 
-  // Tasas Base de respaldo por seguridad
   Map<String, double> tasas = {
     'BCV': 49.25,
     'EURO': 53.18,
@@ -48,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'GUYANA': 0.235,
   };
 
-  // Historial para las barras de tendencias de cada moneda (Color Oro)
   Map<String, List<double>> historialesGraficas = {
     'BCV': [49.10, 49.15, 49.20, 49.22, 49.25],
     'EURO': [52.90, 53.00, 53.10, 53.15, 53.18],
@@ -67,24 +65,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _actualizarTasasDesdeAPI();
   }
 
-  // Conexión segura a internet para jalar tasas en vivo
+  // Lógica nativa ultra-segura para conectar con las tasas en vivo sin requerir 'package:http'
   Future<void> _actualizarTasasDesdeAPI() async {
-    setState(() {
-      _cargandoTasas = true;
-    });
-
+    setState(() { _cargandoTasas = true; });
     try {
-      final url = Uri.parse('https://open.er-api.com/v6/latest/USD');
-      final responseGlobal = await http.get(url);
+      final cliente = HttpClient();
+      final solicitud = await cliente.getUrl(Uri.parse('https://open.er-api.com/v6/latest/USD'));
+      final respuesta = await solicitud.close();
       
-      if (responseGlobal.statusCode == 200) {
-        final data = json.decode(responseGlobal.body);
+      if (respuesta.statusCode == 200) {
+        final datosEnCadena = await respuesta.transform(utf8.decoder).join();
+        final data = json.decode(datosEnCadena);
+        
         setState(() {
           if (data['rates'] != null) {
-            double cop = data['rates']['COP'] ?? 4000.0;
-            double clp = data['rates']['CLP'] ?? 950.0;
-            double brl = data['rates']['BRL'] ?? 5.5;
-            double gyd = data['rates']['GYD'] ?? 210.0;
+            double cop = (data['rates']['COP'] ?? 4000.0).toDouble();
+            double clp = (data['rates']['CLP'] ?? 950.0).toDouble();
+            double brl = (data['rates']['BRL'] ?? 5.5).toDouble();
+            double gyd = (data['rates']['GYD'] ?? 210.0).toDouble();
 
             tasas['COLOMBIA'] = double.parse((1 / (cop / tasas['BCV']!)).toStringAsFixed(4));
             tasas['CHILE'] = double.parse((1 / (clp / tasas['BCV']!)).toStringAsFixed(4));
@@ -96,8 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
           tasas['EURO'] = double.parse((tasas['BCV']! * 1.08).toStringAsFixed(2));
         });
       }
+      cliente.close();
     } catch (e) {
-      debugPrint("Error de red controlado: $e");
+      debugPrint("Respaldo activado correctamente: $e");
     } finally {
       setState(() {
         _cargandoTasas = false;
@@ -109,9 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _calcular(String valor) {
     double monto = double.tryParse(valor) ?? 0.0;
     double tasaActual = tasas[_monedaSeleccionada] ?? 1.0;
-    setState(() {
-      _resultadoVes = monto * tasaActual;
-    });
+    setState(() { _resultadoVes = monto * tasaActual; });
   }
 
   void _seleccionarMoneda(String moneda) {
@@ -168,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 10),
-                  
                   TextField(
                     controller: _montoController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -192,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 15),
-
                   Wrap(
                     spacing: 6.0,
                     runSpacing: 6.0,
@@ -212,7 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     }).toList(),
                   ),
                   const SizedBox(height: 25),
-
                   const Text('PRESIONA LA TASA PARA CALCULAR', style: TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
                   const SizedBox(height: 12),
                   GridView.builder(
@@ -262,8 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   const SizedBox(height: 20),
-
-                  // Módulo de barras de tendencia color Oro
                   Container(
                     height: 65,
                     padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -293,7 +285,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -326,8 +317,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          
-          // BANNER DE ANUNCIOS LIMPIO (Reparado sin el error de sintaxis)
           Container(
             width: double.infinity,
             height: 50, 
