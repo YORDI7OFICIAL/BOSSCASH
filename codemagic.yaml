@@ -13,9 +13,14 @@ workflows:
     scripts:
       - name: Generar Carpetas Nativas Automaticas
         script: flutter create . --platforms=android
-      - name: Descargar Dependencias
+      - name: Forzar Actualizacion de Dependencias
+        script: |
+          cd android
+          ./gradlew clean
+          cd ..
+      - name: Descargar Dependencias Flutter
         script: flutter pub get
       - name: Compilar APK Definitivo
-        script: flutter build apk --release
+        script: flutter build apk --release --no-shrink
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
