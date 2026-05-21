@@ -7,20 +7,13 @@ workflows:
   android-workflow:
     name: Compilar APK Real BOSSCASH
     instance_type: mac_mini_m1
-    max_build_duration: 15
+    max_build_duration: 10
     environment:
       flutter: stable
     scripts:
-      - name: Generar Carpetas Nativas Automaticas
-        script: flutter create . --platforms=android
-      - name: Forzar Actualizacion de Dependencias
-        script: |
-          cd android
-          ./gradlew clean
-          cd ..
-      - name: Descargar Dependencias Flutter
+      - name: Descargar Dependencias
         script: flutter pub get
       - name: Compilar APK Definitivo
-        script: flutter build apk --release --no-shrink
+        script: flutter build apk --release
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
