@@ -37,24 +37,24 @@ class _HomeScreenState extends State<HomeScreen> {
   double _resultadoVes = 0.0;
   bool _cargandoTasas = false;
 
-  // Valores de respaldo base (Por si el teléfono no tiene internet al abrir)
+  // Valores de respaldo inteligentes actualizados a la realidad de la calle
   Map<String, double> tasas = {
-    'BCV': 520.91,
-    'USDT': 712.87,
+    'BCV': 52.09,
+    'USDT': 57.55,
     'EURO': 604.15,
     'COLOMBIA': 0.135,
     'CHILE': 0.548,
-    'BRASIL': 94.50,
+    'BRASIL': 104.45,
     'GUYANA': 2.48,
   };
 
   Map<String, List<double>> historialesGraficas = {
-    'BCV': [518.50, 519.20, 519.93, 520.40, 520.91],
-    'USDT': [708.10, 710.30, 711.00, 712.15, 712.87],
-    'EURO': [601.20, 602.45, 603.10, 603.90, 604.15],
+    'BCV': [51.50, 51.70, 51.93, 52.00, 52.09],
+    'USDT': [56.10, 56.80, 57.10, 57.30, 57.55],
+    'EURO': [60.20, 60.45, 61.10, 61.90, 62.15],
     'COLOMBIA': [0.131, 0.132, 0.133, 0.135, 0.135],
     'CHILE': [0.540, 0.542, 0.545, 0.547, 0.548],
-    'BRASIL': [93.10, 93.60, 94.00, 94.25, 94.50],
+    'BRASIL': [101.10, 102.60, 103.00, 104.00, 104.45],
     'GUYANA': [2.41, 2.43, 2.45, 2.46, 2.48],
   };
 
@@ -71,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final cliente = HttpClient();
       
-      // Consulta directa a la API de Venezuela con el parámetro correcto (enparalelovzla)
       final solicitudVzla = await cliente.getUrl(Uri.parse('https://ve.dolarapi.com/v1/dolares'));
       final respuestaVzla = await solicitudVzla.close();
       
@@ -90,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
 
-      // Consulta de cruzamiento de divisas para soporte sudamericano
       final solicitudGlobal = await cliente.getUrl(Uri.parse('https://open.er-api.com/v6/latest/USD'));
       final respuestaGlobal = await solicitudGlobal.close();
       
@@ -103,10 +101,13 @@ class _HomeScreenState extends State<HomeScreen> {
             double euroGlobal = (dataG['rates']['EUR'] ?? 0.92).toDouble();
             double copGlobal = (dataG['rates']['COP'] ?? 4000.0).toDouble();
             double clpGlobal = (dataG['rates']['CLP'] ?? 940.0).toDouble();
+            double brlGlobal = (dataG['rates']['BRL'] ?? 5.50).toDouble();
             
+            // CÁLCULOS CORREGIDOS: Ahora se cruzan con el dólar paralelo (USDT) para dar el precio real de la calle
             tasas['EURO'] = double.parse((tasas['BCV']! * (1 / euroGlobal)).toStringAsFixed(2));
-            tasas['COLOMBIA'] = double.parse((tasas['BCV']! / (copGlobal / 1000)).toStringAsFixed(3));
-            tasas['CHILE'] = double.parse((tasas['BCV']! / (clpGlobal / 1000)).toStringAsFixed(3));
+            tasas['COLOMBIA'] = double.parse((tasas['USDT']! / (copGlobal / 1000)).toStringAsFixed(3));
+            tasas['CHILE'] = double.parse((tasas['USDT']! / (clpGlobal / 1000)).toStringAsFixed(3));
+            tasas['BRASIL'] = double.parse((tasas['USDT']! / brlGlobal).toStringAsFixed(2)); 
           }
           
           tasas.forEach((key, value) {
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       cliente.close();
     } catch (e) {
-      debugPrint("Conexión interrumpida o sin red. Usando base local.");
+      debugPrint("Error de red controlado.");
     } finally {
       setState(() {
         _cargandoTasas = false;
@@ -187,7 +188,37 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 10),
+                  // BANNER ORIGINAL INTEGRADO EN LA APP EN ALTA DEFINICIÓN
+                  Container(
+                    height: 140,
+                    width: double.infinity,
+                    margin: const EdgeInsets.bottom(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121212),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: const Color(0xFFFFD700), width: 1),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Icon(Icons.monetization_on_rounded, size: 90, color: const Color(0xFFFFD700).withOpacity(0.1)),
+                          ),
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('\$', style: TextStyle(color: Colors.green, fontSize: 50, fontWeight: FontWeight.bold)),
+                                const Text('BOSSCASH', style: TextStyle(color: Color(0xFFFFD700), fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                                Text('PLATAFORMA DE CAMBIO DE MONEDAS', style: TextStyle(color: Colors.grey[400], fontSize: 9, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   TextField(
                     controller: _montoController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -324,14 +355,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-          Container(
-            width: double.infinity,
-            height: 50, 
-            decoration: const BoxDecoration(
-              color: Color(0xFF141414),
-              border: Border(top: BorderSide(color: Color(0xFFFFD700), width: 0.5)),
             ),
           ),
         ],
