@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _resultadoVes = 0.0;
   bool _cargandoTasas = false;
 
+  // Valores de respaldo base (Por si el teléfono no tiene internet al abrir)
   Map<String, double> tasas = {
     'BCV': 520.91,
     'USDT': 712.87,
@@ -70,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final cliente = HttpClient();
       
+      // Consulta directa a la API de Venezuela con el parámetro correcto (enparalelovzla)
       final solicitudVzla = await cliente.getUrl(Uri.parse('https://ve.dolarapi.com/v1/dolares'));
       final respuestaVzla = await solicitudVzla.close();
       
@@ -81,13 +83,14 @@ class _HomeScreenState extends State<HomeScreen> {
           for (var item in listaData) {
             if (item['fuente'] == 'oficial') {
               tasas['BCV'] = (item['promedio'] ?? tasas['BCV']!).toDouble();
-            } else if (item['fuente'] == 'paralelo') {
+            } else if (item['fuente'] == 'enparalelovzla') {
               tasas['USDT'] = (item['promedio'] ?? tasas['USDT']!).toDouble();
             }
           }
         });
       }
 
+      // Consulta de cruzamiento de divisas para soporte sudamericano
       final solicitudGlobal = await cliente.getUrl(Uri.parse('https://open.er-api.com/v6/latest/USD'));
       final respuestaGlobal = await solicitudGlobal.close();
       
@@ -116,8 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       cliente.close();
     } catch (e) {
-      debugPrint("Error de red controlado, manteniendo base local: $e");
-    } finally { // CORREGIDO AQUÍ: Ahora dice 'finally' correctamente
+      debugPrint("Conexión interrumpida o sin red. Usando base local.");
+    } finally {
       setState(() {
         _cargandoTasas = false;
         _calcular(_montoController.text);
