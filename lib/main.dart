@@ -37,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   double _resultadoVes = 0.0;
   bool _cargandoTasas = false;
 
-  // Valores de respaldo inteligentes actualizados a la realidad de la calle
   Map<String, double> tasas = {
     'BCV': 52.09,
     'USDT': 57.55,
@@ -103,7 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
             double clpGlobal = (dataG['rates']['CLP'] ?? 940.0).toDouble();
             double brlGlobal = (dataG['rates']['BRL'] ?? 5.50).toDouble();
             
-            // CÁLCULOS CORREGIDOS: Ahora se cruzan con el dólar paralelo (USDT) para dar el precio real de la calle
             tasas['EURO'] = double.parse((tasas['BCV']! * (1 / euroGlobal)).toStringAsFixed(2));
             tasas['COLOMBIA'] = double.parse((tasas['USDT']! / (copGlobal / 1000)).toStringAsFixed(3));
             tasas['CHILE'] = double.parse((tasas['USDT']! / (clpGlobal / 1000)).toStringAsFixed(3));
@@ -188,11 +186,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // BANNER ORIGINAL INTEGRADO EN LA APP EN ALTA DEFINICIÓN
                   Container(
                     height: 140,
                     width: double.infinity,
-                    margin: const EdgeInsets.bottom(20),
+                    // CORREGIDO AQUÍ: Ahora usa 'EdgeInsets.only(bottom: 20)' obligatorio para que compile
+                    margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       color: const Color(0xFF121212),
                       borderRadius: BorderRadius.circular(15),
