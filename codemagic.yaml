@@ -1,19 +1,17 @@
-publishing:
-  email:
-    recipients:
-      - tu_correo@gmail.com
-
 workflows:
-  android-workflow:
-    name: Compilar APK Real BOSSCASH
+  android-release:
+    name: Android Release APK
+    max_build_duration: 30
     instance_type: mac_mini_m1
-    max_build_duration: 10
     environment:
       flutter: stable
+    triggering:
+      events:
+        - push
     scripts:
-      - name: Descargar Dependencias
-        script: flutter pub get
-      - name: Compilar APK Definitivo
-        script: flutter build apk --release
-    artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - name: Limpiar y reparar Android v1 embedding
+        script: |
+          flutter clean
+          flutter create . --platforms=android
+      - name: Compilar APK modo Release
+        script: |
